@@ -30,7 +30,13 @@ class MNISTDiffusion(nn.Module):
         x_t=self._forward_diffusion(x,t,noise)
         pred_noise=self.model(x_t,t)
 
-        return pred_noise
+        alpha_t=self.alphas.gather(-1,t).reshape(x_t.shape[0],1,1,1)
+        alpha_t_cumprod=self.alphas_cumprod.gather(-1,t).reshape(x_t.shape[0],1,1,1)
+        beta_t=self.betas.gather(-1,t).reshape(x_t.shape[0],1,1,1)
+        
+        x_0_pred=torch.sqrt(1. / alpha_t_cumprod)*x_t-torch.sqrt(1. / alpha_t_cumprod - 1.)*pred_noise
+        
+        return pred_noise, x_0_pred
 
     @torch.no_grad()
     def sampling(self,n_samples,clipped_reverse_diffusion=True,device="cuda"):
